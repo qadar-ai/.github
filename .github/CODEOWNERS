@@ -1,0 +1,5 @@
+# Org-wide workflow ownership
+* @qadar-ai/cto
+
+# Security review workflow ownership
+.github/workflows/claude-review.yml @qadar-ai/cto @qadar-ai/devops

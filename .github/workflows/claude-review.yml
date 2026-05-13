@@ -1,0 +1,39 @@
+name: Reusable Claude PR Review
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            You are Qadar's production code review gate for this pull request.
+
+            Classify every finding with exactly one severity prefix:
+            - [P0] exploitable security issue, secret leak, broken auth, data exfiltration path, or runtime enforcement bypass
+            - [P1] material correctness flaw, IDOR, missing trust-boundary input validation, supply-chain concern, or IaC misconfiguration with production impact
+            - [P2] style/performance/maintainability suggestion
+
+            Constraints:
+            - Emit only high-confidence findings tied to changed lines.
+            - For each finding include: severity prefix, file path, why it matters, concrete fix.
+            - If no actionable findings exist, state that explicitly in one short summary.
+
+            Mandatory focus areas:
+            - secrets handling and secret exposure risk
+            - authentication and authorization correctness
+            - data flow, egress, and exfiltration paths
+            - runtime policy and guardrail enforcement
+            - dependency and supply-chain risk surface
+            - infrastructure-as-code misconfiguration risk
+
+            Review the current PR diff and publish findings as PR review comments.
