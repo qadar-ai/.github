@@ -19,19 +19,37 @@ jobs:
       - uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          mode: review
+          track_progress: true
+          use_sticky_comment: true
+          classify_inline_comments: true
+          claude_args: |
+            --allowed-tools "Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr checkout:*),Bash(gh pr review:*),Bash(gh api:*),Bash(git log:*),Bash(git diff:*),Bash(git show:*),Bash(cat:*),Bash(grep:*),Bash(rg:*),Bash(find:*),Bash(ls:*)"
           prompt: |
+            REPO: ${{ github.repository }}
+            PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
+
             You are Qadar's production code review gate for this pull request.
 
-            Classify every finding with exactly one severity prefix:
+            Steps you MUST take:
+            1. Read the PR title, body, and full diff via `gh pr view $PR_NUMBER --json title,body,files`
+               and `gh pr diff $PR_NUMBER`.
+            2. Analyse the diff using the focus areas and severity rubric below.
+            3. Publish a single PR review by invoking:
+                  gh pr review $PR_NUMBER --comment --body "<your review markdown>"
+               The review body MUST start with one of:
+                  `Claude review: NO ACTIONABLE FINDINGS`
+                  `Claude review: FINDINGS`
+               followed by a bullet list of findings, each prefixed with [P0], [P1], or [P2].
+
+            Severity rubric (exactly one prefix per finding):
             - [P0] exploitable security issue, secret leak, broken auth, data exfiltration path, or runtime enforcement bypass
             - [P1] material correctness flaw, IDOR, missing trust-boundary input validation, supply-chain concern, or IaC misconfiguration with production impact
             - [P2] style/performance/maintainability suggestion
 
             Constraints:
-            - Emit only high-confidence findings tied to changed lines.
-            - For each finding include: severity prefix, file path, why it matters, concrete fix.
-            - If no actionable findings exist, state that explicitly in one short summary.
+            - Only high-confidence findings tied to changed lines.
+            - Each finding: severity prefix, file path, why it matters, concrete fix.
+            - If nothing actionable, post the NO ACTIONABLE FINDINGS line plus a one-sentence summary of what changed.
 
             Mandatory focus areas:
             - secrets handling and secret exposure risk
@@ -41,4 +59,4 @@ jobs:
             - dependency and supply-chain risk surface
             - infrastructure-as-code misconfiguration risk
 
-            Review the current PR diff and publish findings as PR review comments.
+            Always finish by posting the review with `gh pr review`. Do not stop without publishing.
