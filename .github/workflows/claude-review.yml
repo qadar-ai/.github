@@ -14,6 +14,7 @@ jobs:
     steps:
       - uses: anthropics/claude-code-action@v1
         with:
+          mode: review
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           prompt: |
             You are Qadar's production code review gate for this pull request.
